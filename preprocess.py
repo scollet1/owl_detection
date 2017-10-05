@@ -32,12 +32,16 @@ def process():
 #				plt.show
 				img = load_img(t_p)
 				x = img_to_array(img)
-				x = x.reshape((1,) + x.shape)
+#				x = x.reshape((1,) + x.shape)
 #				test = Image.open(t_p)
 #				test.close()
 #				call(["open", t_p])
 				y = np.array([int(raw_input('How many owls?'))])
-				M = x + y
+				M = []
+				for i in x:
+					M.append(i)
+				for j in y:
+					M.append(j)
 				writer.writerow(M)
 				cv2.destroyAllWindows()
 			else:
