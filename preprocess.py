@@ -31,7 +31,7 @@ def process():
 				cv2.waitKey(1)
 #				plt.show
 				img = load_img(t_p)
-				x = img_to_array(img)
+				x = np.array([img_to_array(img)])
 #				x = x.reshape((1,) + x.shape)
 #				test = Image.open(t_p)
 #				test.close()
