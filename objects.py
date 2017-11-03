@@ -50,7 +50,7 @@ class Network():
 		model.add(Dense(out_put))
 		model.add(Activation('relu'))
 
-		model.compile(loss='mean_squared_error', optimizer='rmsprop', metrics=['accuracy'])
+		model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 		return model
 	def pre_gen(self, predict_gen, steps_per_epoch, \
 	epochs, validation_data, validation_steps):
@@ -61,11 +61,10 @@ class Network():
 	        validation_data=validation_data,
 	        validation_steps=validation_steps)
 	def fit_gen(self, train_generator, steps_per_epoch, \
-	epochs, validation_data, validation_steps):
+				validation_data, validation_steps):
 		self.model.fit_generator(
 	        train_generator,
 	        steps_per_epoch=steps_per_epoch,
-	        epochs=epochs,
 	        validation_data=validation_data,
 	        validation_steps=validation_steps)
 	def train(self, feed, target):
@@ -76,3 +75,64 @@ class Network():
 		self.model.load_weights(name)
 	def save(self, name):
 		self.model.save_weights(name)
+
+class DataGenerator(object):
+  'Generates data for Keras'
+  def __init__(self, dim_x = 32, dim_y = 32, dim_z = 32, batch_size = 32, shuffle = True):
+      'Initialization'
+      self.dim_x = dim_x
+      self.dim_y = dim_y
+      self.dim_z = dim_z
+      self.batch_size = batch_size
+      self.shuffle = shuffle
+
+  def generate(self, labels, list_IDs):
+      'Generates batches of samples'
+      # Infinite loop
+      while 1:
+          # Generate order of exploration of dataset
+          indexes = self.__get_exploration_order(list_IDs)
+
+          # Generate batches
+          imax = int(len(indexes)/self.batch_size)
+          for i in range(imax):
+              # Find list of IDs
+              list_IDs_temp = [list_IDs[k] for k in indexes[i*self.batch_size:(i+1)*self.batch_size]]
+
+              # Generate data
+              X, y = self.__data_generation(labels, list_IDs_temp)
+
+              yield X, y
+
+  def __get_exploration_order(self, list_IDs):
+      'Generates order of exploration'
+      # Find exploration order
+      indexes = np.arange(len(list_IDs))
+      if self.shuffle == True:
+          np.random.shuffle(indexes)
+
+      return indexes
+
+  def __data_generation(self, labels, list_IDs_temp):
+      'Generates data of batch_size samples' # X : (n_samples, v_size, v_size, v_size, n_channels)
+      # Initialization
+      X = np.empty((self.batch_size, self.dim_x, self.dim_y, self.dim_z))
+      y = np.empty((self.batch_size), dtype = int)
+
+      # Generate data
+      for i, ID in enumerate(list_IDs_temp):
+		  print np.load(ID)
+		  X[:, :, :, :] = np.load(ID)
+		  #print X\
+		  #X = np.transpose(X, (0, 3, 150, 150))
+		  X = np.reshape(X, (3, 150, 150, 32))
+		  print X
+		  y[i] = labels[ID]
+
+      return X, sparsify(y)
+
+def sparsify(y):
+  'Returns labels in binary NumPy array'
+  n_classes = 1# Enter number of classes
+  return np.array([[1 if y[i] == j else 0 for j in range(n_classes)]
+                   for i in range(y.shape[0])])
