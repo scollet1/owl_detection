@@ -98,7 +98,7 @@ def train(model):
 	params = {'dim_x': 150,
           'dim_y': 150,
           'dim_z': 3,
-          'batch_size': 32,
+          'batch_size': batch_size,
           'shuffle': True}
 
 	#thefile = open('test.txt', 'w')
@@ -122,9 +122,10 @@ def train(model):
 		img = Image.open(Path)
 		#wpercent = (basewidth / float(img.size[0]))
 		#hsize = 150
-		img = img.resize((150, 150), PIL.Image.ANTIALIAS)
+		img = img.resize((150, 150), PIL.Image.BICUBIC)
 		img.save(Path)
 		this = cv2.imread(Path)
+		#print this
 		np.save('data/train/npy/' + 'TRAIN' + str(each) + '.npy', this)
 		#i += 1
 
@@ -134,10 +135,13 @@ def train(model):
 		img = Image.open(Path)
 		#wpercent = (basewidth / float(img.size[0]))
 		#hsize = int((float(img.size[1]) * float(wpercent)))
-		img = img.resize((150, 150), PIL.Image.ANTIALIAS)
+		img = img.resize((150, 150), PIL.Image.BICUBIC)
 		img.save(Path)
 		this = cv2.imread(Path)
+		#print this
 		np.save('data/validation/npy/' + 'TRAIN' + str(each) + '.npy', this)
+
+	#os.Exit(1)
 
 	partition = {'train':[], 'validation':[]}
 	labels = {'owls': []}
@@ -178,24 +182,7 @@ def train(model):
 def predict(model, img):
 	batch_size = 32
 
-	predict_datagen = ImageDataGenerator(
-        rescale=1./255,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True)
 
-	predict_gen = predict_datagen.flow_from_directory(
-	'data/predict/',
-        target_size=(150, 150),
-        batch_size=batch_size,
-        class_mode='sparse')
-
-	model.pre_gen(
-		predict_gen,
-        2000 // batch_size,
-        50,
-        validation_generator,
-        800 // batch_size)
 
 def run(args):
 	model = objects.Network(3, 150, 150, 1)

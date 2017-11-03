@@ -31,15 +31,15 @@ class Network():
 		self.target_model = self._build_model(d1, d2, d3, out_put)
 	def _build_model(self, d1, d2, d3, out_put):
 		model = Sequential()
-		model.add(Conv2D(32, (d1, d1), input_shape=(d1, d2, d3), data_format='channels_first'))
+		model.add(Conv2D(32, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
 		model.add(Activation('relu'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-		model.add(Conv2D(32, (d1, d1), input_shape=(d1, d2, d3), data_format='channels_first'))
+		model.add(Conv2D(32, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
 		model.add(Activation('relu'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-		model.add(Conv2D(64, (d1, d1), input_shape=(d1, d2, d3), data_format='channels_first'))
+		model.add(Conv2D(64, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
 		model.add(Activation('relu'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -50,7 +50,7 @@ class Network():
 		model.add(Dense(out_put))
 		model.add(Activation('relu'))
 
-		model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+		model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 		return model
 	def pre_gen(self, predict_gen, steps_per_epoch, \
 	epochs, validation_data, validation_steps):
@@ -110,26 +110,30 @@ class DataGenerator(object):
       indexes = np.arange(len(list_IDs))
       if self.shuffle == True:
           np.random.shuffle(indexes)
-
       return indexes
 
   def __data_generation(self, labels, list_IDs_temp):
-      'Generates data of batch_size samples' # X : (n_samples, v_size, v_size, v_size, n_channels)
+      'Generates data of batch_size samples' # X : (n_samples, v_size, v_size, n_channels)
       # Initialization
       X = np.empty((self.batch_size, self.dim_x, self.dim_y, self.dim_z))
       y = np.empty((self.batch_size), dtype = int)
 
       # Generate data
       for i, ID in enumerate(list_IDs_temp):
-		  print np.load(ID)
-		  X[:, :, :, :] = np.load(ID)
-		  #print X\
-		  #X = np.transpose(X, (0, 3, 150, 150))
-		  X = np.reshape(X, (3, 150, 150, 32))
-		  print X
+		  #print np.load(ID)
+		  #print X
+		  X[0:32, 0:150, 0:150, 0:3] = np.load(ID)
+		  X_ = np.reshape(X, (X.shape[0], 3, 150, 150))
+		  #print X.size
+		  print X_
+		  #np.transpose(X, (32, 150, 150, 3))
+		  #X =
+		  #print X
+
+		  #print X
 		  y[i] = labels[ID]
 
-      return X, sparsify(y)
+      return X_, sparsify(y)
 
 def sparsify(y):
   'Returns labels in binary NumPy array'
