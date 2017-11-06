@@ -12,6 +12,7 @@ import cv2
 import PIL
 from PIL import Image
 import shutil
+import csv
 #from preprocess import process
 
 train_datagen = ImageDataGenerator(
@@ -114,7 +115,7 @@ def train(model):
 	else:
 		os.makedirs('data/validation/npy')
 
-	print "read training"
+	print ("read training")
 	basewidth = 150
 
 	for each in range(0, len(listdir('data/train/images'))):
@@ -123,20 +124,20 @@ def train(model):
 		#wpercent = (basewidth / float(img.size[0]))
 		#hsize = 150
 		img = img.resize((150, 150), PIL.Image.BICUBIC)
-		img.save(Path)
+		# img.save(Path)
 		this = cv2.imread(Path)
 		#print this
 		np.save('data/train/npy/' + 'TRAIN' + str(each) + '.npy', this)
 		#i += 1
 
-	print "read valid"
+	print ("read valid")
 	for each in range(0, len(listdir('data/validation/images'))):
 		Path = 'data/validation/images/' + listdir('data/validation/images')[each]
 		img = Image.open(Path)
 		#wpercent = (basewidth / float(img.size[0]))
 		#hsize = int((float(img.size[1]) * float(wpercent)))
 		img = img.resize((150, 150), PIL.Image.BICUBIC)
-		img.save(Path)
+		# img.save(Path)
 		this = cv2.imread(Path)
 		#print this
 		np.save('data/validation/npy/' + 'TRAIN' + str(each) + '.npy', this)
@@ -146,12 +147,12 @@ def train(model):
 	partition = {'train':[], 'validation':[]}
 	labels = {'owls': []}
 
-	print "partition train"
+	print ("partition train")
 	for f in listdir('data/train/npy'):
 		partition['train'].append('data/train/npy/' + f)
 		labels['data/train/npy/' + f] = 1
 
-	print "partition valid"
+	print ("partition valid")
 	for f in listdir('data/validation/npy'):
 		partition['validation'].append('data/validation/npy/' + f)
 		labels['data/validation/npy/' + f] = 1
@@ -183,6 +184,58 @@ def predict(model, img):
 	batch_size = 32
 
 
+# 44 = <
+# 46 = >
+
+def manual_classification(train, valid):
+	if os.path.exists('train_manual_classification.csv'):
+		os.remove('train_manual_classification.csv')
+	with open('train_manual_classification.csv', 'w') as train_csv:
+		wr = csv.writer(train_csv, delimiter='|')
+		for i in range(0, len(listdir(train))):
+			t_path = train + '/' + listdir(train)[i]
+			img = cv2.imread(t_path)
+			resize = cv2.resize(img, (900, 600))
+			cv2.imshow('owl or not owl?', resize)
+			while True:
+				key = cv2.waitKey(0)
+				if key is 27:
+					break
+				elif key is 48:
+					break
+				elif key is 49:
+					break
+			if key is 27: # escape key
+				break
+			elif key is 49: # 1
+				wr.writerow((t_path, '1'))
+			elif key is 48:
+				wr.writerow((t_path, '0'))
+			cv2.destroyWindow('owl or not owl?')
+
+		print ('\n\ndone with train_manual_classification, valid_manual_classification about to start\n\n')
+
+	if os.path.exists('valid_manual_classification.csv'):
+		os.remove('valid_manual_classification.csv')
+	with open('valid_manual_classification.csv', 'w') as valid_csv:
+		wr = csv.writer(valid_csv, delimiter='|')
+		for i in range(0, len(listdir(valid))):
+			t_path = valid + '/' + listdir(valid)[i]
+			img = cv2.imread(t_path)
+			resize = cv2.resize(img, (900, 600))
+			cv2.imshow('owl or not owl?', resize)
+			key = cv2.waitKey(0)
+			if key is 27: # escape key
+				break
+			elif key is 49: # 1
+				wr.writerow((t_path, '1'))
+			elif key is 48:
+				wr.writerow((t_path, '0'))
+			cv2.destroyWindow('owl or not owl?')
+
+	cv2.destroyAllWindows()
+
+	return train_csv, valid_csv
 
 def run(args):
 	model = objects.Network(3, 150, 150, 1)
@@ -190,6 +243,10 @@ def run(args):
 		train(model)
 	elif args[1] == '--predict':
 		predict(model, [args[2]])
+	elif args[1] == '--class':
+		# tmc: manual_classification of images in the train directory
+		# cmc: manual_classification of images in the validation directory
+		tmc, cmc = manual_classification(args[2], args[3])
 
 if __name__ == "__main__":
 	run(sys.argv)
