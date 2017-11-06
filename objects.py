@@ -50,7 +50,7 @@ class Network():
 		model.add(Dense(out_put))
 		model.add(Activation('relu'))
 
-		model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+		model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 		return model
 	def pre_gen(self, predict_gen, steps_per_epoch, \
 	epochs, validation_data, validation_steps):
@@ -120,17 +120,9 @@ class DataGenerator(object):
 
       # Generate data
       for i, ID in enumerate(list_IDs_temp):
-		  #print np.load(ID)
-		  #print X
 		  X[0:32, 0:150, 0:150, 0:3] = np.load(ID)
 		  X_ = np.reshape(X, (X.shape[0], 3, 150, 150))
-		  #print X.size
 		  print X_
-		  #np.transpose(X, (32, 150, 150, 3))
-		  #X =
-		  #print X
-
-		  #print X
 		  y[i] = labels[ID]
 
       return X_, sparsify(y)
