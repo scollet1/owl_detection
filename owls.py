@@ -12,13 +12,21 @@ import cv2
 import PIL
 from PIL import Image
 import shutil
-from guizero import App, TextBox
+import csv
+#import kivy
+#kivy.require('1.0.6') # replace with your current kivy version !
+
+#from kivy.app import App
+#from kivy.uix.label import Label
 import argparse
 
 '''we will need to split the image preprocessing into a separate file, I just\
 haven't done it yet ;-;  '''
 
 #from preprocess import process
+
+TRAIN = 'train'
+VALID = 'validation'
 
 train_datagen = ImageDataGenerator(
 	rescale=1./255,
@@ -120,36 +128,64 @@ def train(model):
 	else:
 		os.makedirs('data/validation/npy')
 
-	print "read training"
+	#print "read training"
 	basewidth = 150
 
-	for each in range(0, len(listdir('data/train/images'))):
-		Path = 'data/train/images/' + listdir('data/train/images')[each]
+	lengtht = len(listdir('data/train/images'))
+	lengthv = len(listdir('data/validation/images'))
+
+	partition = {'train':[], VALID:[]}
+	labels = {'owl?': []}
+	#for each in range(0, lengtht / 2):
+	seed = 9
+	np.random.seed(seed)
+	X, Y, X_, Y_ = [], [], [], []
+
+	with open('train_first.csv') as f:
+  		reader = csv.reader(f, delimiter='|')
+		for row in reader:
+			X.append(str(row[0]))
+			Y.append(row[1])
+
+	#dataset = np.loadtxt('train_first.csv', delimiter='|')
+	#X = dataset[:,0:1]
+	#Y = dataset[:,1:]
+	#Path = 'data/'+TRAIN+'/images/' + listdir('data/'+TRAIN+'/images')[each]
+	for i in X:
+		#print i
+		Path = str(i)
+		print Path
 		img = Image.open(Path)
+		img.resize((150, 150), PIL.Image.BICUBIC)
+		this = cv2.imread(img)
+		np.save('data/'+TRAIN+'/npy/' + 'TRAIN' + str(each) + '.npy', this)
+
+	#dataset = np.loadtxt('valid_first.csv', delimiter='|')
+	#X_ = dataset[:,0:1]
+	#Y_ = dataset[:,1:]
+	with open('valid_first.csv') as f:
+  		reader = csv.reader(f, delimiter='|')
+		for row in reader:
+			X_.append(str(row[0]))
+			Y_.append(row[1])
+
+	for i in X_:
+		#Path = 'data/'+VALID+'/images/' + listdir('data/'+VALID+'/images')[each]
+		img = Image.open(i)
 		img = img.resize((150, 150), PIL.Image.BICUBIC)
 		this = cv2.imread(img)
-		np.save('data/train/npy/' + 'TRAIN' + str(each) + '.npy', this)
+		np.save('data/'+VALID+'/npy/' + 'TRAIN' + str(each) + '.npy', this)
 
-	print "read valid"
-	for each in range(0, len(listdir('data/validation/images'))):
-		Path = 'data/validation/images/' + listdir('data/validation/images')[each]
-		img = Image.open(Path)
-		img = img.resize((150, 150), PIL.Image.BICUBIC)
-		this = cv2.imread(img)
-		np.save('data/validation/npy/' + 'TRAIN' + str(each) + '.npy', this)
-
-	partition = {'train':[], 'validation':[]}
-	labels = {'owls': []}
 
 	print "partition train"
-	for f in listdir('data/train/npy'):
-		partition['train'].append('data/train/npy/' + f)
-		labels['data/train/npy/' + f] = 1
+	for each, f in listdir('data/'+TRAIN+'/npy'):
+		partition['train'].append('data/'+TRAIN+'/npy/' + f)
+		labels['data/'+TRAIN+'/npy/' + f] = Y[each]
 
 	print "partition valid"
-	for f in listdir('data/validation/npy'):
-		partition['validation'].append('data/validation/npy/' + f)
-		labels['data/validation/npy/' + f] = 1
+	for each, f in listdir('data/'+VALID+'/npy'):
+		partition['validation'].append('data/'+VALID+'/npy/' + f)
+		labels['data/'+VALID+'/npy/' + f] = Y_[each]
 
 	# Generators
 	training_generator = objects.DataGenerator(**params).generate(labels, partition['train'])
@@ -165,7 +201,9 @@ def train(model):
 def predict(model, Path):
 	img = Image.open(Path)
 	img = img.resize((150, 150), PIL.Image.BICUBIC)
+	print img
 	this = cv2.imread(img)
+	print this
 	model.predict(this)
 
 def run(option):
@@ -174,23 +212,20 @@ def run(option):
 		model = model.load('trained.h5')
 	if option == '--train':
 		train(model)
-	elif option.predict:
+	elif os.path.exists(option):
 		predict(model, option)
 	else:
 		print "Error, invalid argument"
 		os.exit(1)
 
 if __name__ == "__main__":
+#	objects.OwlDetector().run()
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--predict')
 	parser.add_argument('--train')
 	option = parser.parse_args()
-	print option.predict
-#	if len(sys.argv) > 1:
-#		option
-#	if len(sys.argv) == 3:
-#		Path = sys.argv[2]
 	if option.predict:
+		print "Analyzing image : " + option.predict
 		run(option.predict)
 	else:
 		run('--train')

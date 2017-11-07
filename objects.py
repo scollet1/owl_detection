@@ -23,6 +23,10 @@ HIDDEN_LAYERS = 2
 NEURAL_DENSITY = 32
 LEARNING_RATE = 0.001
 
+#class OwlDetector(App):
+#    def build(self):
+#        return Label(text = 'Hello world')
+
 class Network():
 	def __init__(self, d1, d2, d3, out_put):
 		self.output_size = out_put
