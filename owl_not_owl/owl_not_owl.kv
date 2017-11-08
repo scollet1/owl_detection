@@ -1,0 +1,42 @@
+ScreenManagement:
+	HomeScreen:
+	DetectionScreen:
+
+<HomeScreen>:
+	name: "homescreen"
+	canvas.before:
+		Rectangle:
+			pos: self.pos
+			size: self.size
+			source: 'owl.jpg'
+
+	Button:
+		size: 100, 75
+		text: 'OWLS!'
+		color: 0,0,0,1
+		font_size: 50
+		size_hint: 0.3,0.2
+		pos_hint: {'right':1, 'top':1}
+		background_color: 0,0,0,0
+		border: 30, 30, 30, 30
+		on_release: app.root.current = "detectionscreen"
+
+<DetectionScreen>:
+	name: "detectionscreen"
+	canvas.before:
+		Rectangle:
+			pos: self.pos
+			size: self.size
+			source: 'kewl_owl.jpg'
+	TextInput:
+		id: path
+		size_hint: 0.65, 0.05
+		background_color: 0,0,0,0.10
+		pos: root.x + 100, root.height - (self.height * 2)
+		hint_text: "path of images to process"
+		multiline: False
+	Button:
+		size_hint: 0.2, 0.05
+		text: "Run"
+		pos: root.width - 400, root.height - (self.height * 2)
+		on_release: root.quepedo(path)
