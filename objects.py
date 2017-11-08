@@ -39,7 +39,7 @@ class Network():
 		model.add(Activation('relu'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-		model.add(Conv2D(32, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
+		model.add(Conv2D(64, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
 		model.add(Activation('relu'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -47,14 +47,18 @@ class Network():
 		model.add(Activation('relu'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-		model.add(Flatten())
-		model.add(Dense(64))
+		model.add(Conv2D(128, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
 		model.add(Activation('relu'))
+		model.add(MaxPooling2D(pool_size=(2, 2)))
+
+		model.add(Flatten())
+		model.add(Dense(128))
+		model.add(Activation('sigmoid'))
 		model.add(Dropout(0.5))
 		model.add(Dense(out_put))
-		model.add(Activation('relu'))
+		model.add(Activation('softmax'))
 
-		model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 		return model
 	def pre_gen(self, predict_gen, steps_per_epoch, \
 	epochs, validation_data, validation_steps):
@@ -69,12 +73,13 @@ class Network():
 		self.model.fit_generator(
 	        train_generator,
 	        steps_per_epoch=steps_per_epoch,
+			epochs=2,
 	        validation_data=validation_data,
 	        validation_steps=validation_steps)
 	def train(self, feed, target):
 		self.model.fit(feed, target, epochs=1, verbose=0)
 	def predict(self, X):
-		self.model.predict(X)
+		return self.model.predict(X)
 	def load(self, name):
 		self.model.load_weights(name)
 	def save(self, name):
@@ -120,19 +125,24 @@ class DataGenerator(object):
       'Generates data of batch_size samples' # X : (n_samples, v_size, v_size, n_channels)
       # Initialization
       X = np.empty((self.batch_size, self.dim_x, self.dim_y, self.dim_z))
-      y = np.empty((self.batch_size), dtype = int)
+      y = np.empty((self.batch_size, 2), dtype = int)
+#      y = {}
 
       # Generate data
+#      print "enum"
       for i, ID in enumerate(list_IDs_temp):
 		  X[0:32, 0:150, 0:150, 0:3] = np.load(ID)
 		  X_ = np.reshape(X, (X.shape[0], 3, 150, 150))
-		  print X_
-		  y[i] = labels[ID]
+#		  print labels[ID]
+#		  print y
+		  y[i,0:2] = labels[ID]
+		  print y
+#		  print y[i]
 
-      return X_, sparsify(y)
+      return X_, y
 
 def sparsify(y):
   'Returns labels in binary NumPy array'
-  n_classes = 1# Enter number of classes
+  n_classes = 2# Enter number of classes
   return np.array([[1 if y[i] == j else 0 for j in range(n_classes)]
                    for i in range(y.shape[0])])

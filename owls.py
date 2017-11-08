@@ -1,6 +1,7 @@
 import numpy as np
 from keras.preprocessing import image
 from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+from keras.utils.np_utils import to_categorical
 import sys
 import objects
 import tensorflow as tf
@@ -135,57 +136,80 @@ def train(model):
 	lengthv = len(listdir('data/validation/images'))
 
 	partition = {'train':[], VALID:[]}
-	labels = {'owl?': []}
+	labels = {}
 	#for each in range(0, lengtht / 2):
 	seed = 9
 	np.random.seed(seed)
 	X, Y, X_, Y_ = [], [], [], []
 
-	with open('train_first.csv') as f:
-  		reader = csv.reader(f, delimiter='|')
+	with open('manual_classification/train_first.csv') as f:
+  		reader = csv.reader(f, delimiter=',')
 		for row in reader:
-			X.append(str(row[0]))
-			Y.append(row[1])
+#			print row
+			if os.path.exists(str(row[0])):
+				#print row[1]
+				X.append(row[0])
+#				num = int(row[1])
+				#print num
+				Y.append(int(row[1]))
+				Y.append(int(row[2]))
+#				Y.append(row[2])
 
 	#dataset = np.loadtxt('train_first.csv', delimiter='|')
 	#X = dataset[:,0:1]
 	#Y = dataset[:,1:]
 	#Path = 'data/'+TRAIN+'/images/' + listdir('data/'+TRAIN+'/images')[each]
-	for i in X:
-		#print i
-		Path = str(i)
-		print Path
-		img = Image.open(Path)
-		img.resize((150, 150), PIL.Image.BICUBIC)
-		this = cv2.imread(img)
-		np.save('data/'+TRAIN+'/npy/' + 'TRAIN' + str(each) + '.npy', this)
+	#print X
+	for i in range(len(X)):
+		img = Image.open(str(X[i]))
+		width, height = img.size
+		if width > 150 and height > 150:
+			img = img.resize((150, 150), PIL.Image.BICUBIC)
+		img.save(str(X[i]))
+		this = cv2.imread(X[i])
+		np.save('data/'+TRAIN+'/npy/'+TRAIN + str(i) + '.npy', this)
 
-	#dataset = np.loadtxt('valid_first.csv', delimiter='|')
-	#X_ = dataset[:,0:1]
-	#Y_ = dataset[:,1:]
-	with open('valid_first.csv') as f:
-  		reader = csv.reader(f, delimiter='|')
+	with open('manual_classification/valid_first.csv') as f:
+  		reader = csv.reader(f, delimiter=',')
 		for row in reader:
-			X_.append(str(row[0]))
-			Y_.append(row[1])
+#			print row
+			if os.path.exists(str(row[0])):
+				X_.append(row[0])
+#				num = int(row[1])
+				#print num
+				Y_.append(row[1])
+				Y_.append(row[2])
 
-	for i in X_:
-		#Path = 'data/'+VALID+'/images/' + listdir('data/'+VALID+'/images')[each]
-		img = Image.open(i)
-		img = img.resize((150, 150), PIL.Image.BICUBIC)
-		this = cv2.imread(img)
-		np.save('data/'+VALID+'/npy/' + 'TRAIN' + str(each) + '.npy', this)
-
+	for i in range(len(X_)):
+		img = Image.open(str(X_[i]))
+		width, height = img.size
+		if width > 150 and height > 150:
+			img = img.resize((150, 150), PIL.Image.BICUBIC)
+		img.save(str(X_[i]))
+		this = cv2.imread(X_[i])
+		np.save('data/'+VALID+'/npy/' + VALID + str(i) + '.npy', this)
 
 	print "partition train"
-	for each, f in listdir('data/'+TRAIN+'/npy'):
+	each = 0
+	for f in listdir('data/'+TRAIN+'/npy'):
 		partition['train'].append('data/'+TRAIN+'/npy/' + f)
-		labels['data/'+TRAIN+'/npy/' + f] = Y[each]
+#		print Y[each]
+		labels['data/'+TRAIN+'/npy/' + f] = []
+		labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
+		each += 1
+		labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
+		each += 1
 
 	print "partition valid"
-	for each, f in listdir('data/'+VALID+'/npy'):
+	each = 0
+	for f in listdir('data/'+VALID+'/npy'):
 		partition['validation'].append('data/'+VALID+'/npy/' + f)
-		labels['data/'+VALID+'/npy/' + f] = Y_[each]
+#		print Y_[each]
+		labels['data/'+TRAIN+'/npy/' + f] = []
+		labels['data/'+TRAIN+'/npy/' + f].append(Y_[each])
+		each += 1
+		labels['data/'+TRAIN+'/npy/' + f].append(Y_[each])
+		each += 1
 
 	# Generators
 	training_generator = objects.DataGenerator(**params).generate(labels, partition['train'])
@@ -200,23 +224,35 @@ def train(model):
 
 def predict(model, Path):
 	img = Image.open(Path)
-	img = img.resize((150, 150), PIL.Image.BICUBIC)
-	print img
-	this = cv2.imread(img)
-	print this
-	model.predict(this)
+	width, height = img.size
+	if width > 150 and height > 150:
+		img = img.resize((150, 150), PIL.Image.BICUBIC)
+	img.save(Path)
+	this = cv2.imread(Path)
+	np.save('data/'+'predict'+'/npy/'+'predict'+'.npy', this)
+	X = np.empty((1, 150, 150, 3))
+	X[0:1, 0:150, 0:150, 0:3] = np.load('data/'+'predict'+'/npy/'+'predict'+'.npy')
+	X_ = np.reshape(X, (X.shape[0], 3, 150, 150))
+#	print X_
+	print model.predict(X_)[0][0]
+#	print model.predict(X_).size
+#	print model.predict(X_).shape
 
 def run(option):
-	model = objects.Network(3, 150, 150, 1)
+	model = objects.Network(3, 150, 150, 2)
+	print "Option selected : " + option
 	if os.path.exists('trained.h5'):
-		model = model.load('trained.h5')
+		model.load('trained.h5')
+	#print os.path.exists(option)
 	if option == '--train':
+		print "Training ..."
 		train(model)
 	elif os.path.exists(option):
+		print "Predicting ..."
 		predict(model, option)
 	else:
 		print "Error, invalid argument"
-		os.exit(1)
+		return
 
 if __name__ == "__main__":
 #	objects.OwlDetector().run()

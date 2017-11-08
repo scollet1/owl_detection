@@ -36,14 +36,14 @@ def process():
 				print filen
 				t_p = PATH + filen # total_path
 				img = cv2.imread(t_p, 0)
-				r_img = cv2.resize(img, (960, 540)) 
+				r_img = cv2.resize(img, (960, 540))
 				cv2.imshow('image', r_img)
 				cv2.waitKey(1)
 #				plt.show
 				img = load_img(t_p)
 				x = img_to_array(img)  # this is a Numpy array with shape (3, 150, 150)
 				x = x.reshape((1,) + x.shape)  # this is a Numpy array with shape (1, 3, 150, 150)
-				
+
 				x = np.array([img_to_array(img)])
 #				x = x.reshape((1,) + x.shape)
 #				test = Image.open(t_p)
