@@ -12,6 +12,7 @@ sup = True
 #                                                                              #
 # **************************************************************************** #
 
+import os
 import numpy as np
 from keras.optimizers import Adam
 from keras import backend as K
@@ -19,46 +20,33 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import Sequential
 
-HIDDEN_LAYERS = 2
-NEURAL_DENSITY = 32
-LEARNING_RATE = 0.001
-
-#class OwlDetector(App):
-#    def build(self):
-#        return Label(text = 'Hello world')
-
 class Network():
 	def __init__(self, d1, d2, d3, out_put):
 		self.output_size = out_put
-		self.learning_rate = LEARNING_RATE
 		self.model = self._build_model(d1, d2, d3, out_put)
 		self.target_model = self._build_model(d1, d2, d3, out_put)
 	def _build_model(self, d1, d2, d3, out_put):
 		model = Sequential()
-		model.add(Conv2D(32, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
-		model.add(Activation('relu'))
+		model.add(Conv2D(1028, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
+		model.add(Activation('sigmoid'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-		model.add(Conv2D(64, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
-		model.add(Activation('relu'))
-		model.add(MaxPooling2D(pool_size=(2, 2)))
-
-		model.add(Conv2D(64, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
-		model.add(Activation('relu'))
+		model.add(Conv2D(512, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
+		model.add(Activation('sigmoid'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
 		model.add(Conv2D(128, (3, 3), input_shape=(d1, d2, d3), data_format='channels_first'))
-		model.add(Activation('relu'))
+		model.add(Activation('sigmoid'))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 
 		model.add(Flatten())
-		model.add(Dense(128))
+		model.add(Dense(64))
 		model.add(Activation('sigmoid'))
 		model.add(Dropout(0.5))
 		model.add(Dense(out_put))
 		model.add(Activation('softmax'))
 
-		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
 		return model
 	def pre_gen(self, predict_gen, steps_per_epoch, \
 	epochs, validation_data, validation_steps):
@@ -126,19 +114,11 @@ class DataGenerator(object):
       # Initialization
       X = np.empty((self.batch_size, self.dim_x, self.dim_y, self.dim_z))
       y = np.empty((self.batch_size, 2), dtype = int)
-#      y = {}
-
-      # Generate data
-#      print "enum"
       for i, ID in enumerate(list_IDs_temp):
 		  X[0:32, 0:150, 0:150, 0:3] = np.load(ID)
 		  X_ = np.reshape(X, (X.shape[0], 3, 150, 150))
-#		  print labels[ID]
-#		  print y
 		  y[i,0:2] = labels[ID]
-		  print y
-#		  print y[i]
-
+		#   print y[i]
       return X_, y
 
 def sparsify(y):
