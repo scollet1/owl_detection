@@ -11,6 +11,7 @@ import tensorflow as tf
 from random import random
 from itertools import izip
 
+BATCH = 128
 TRAIN = 'train'
 VALID = 'validation'
 PREDICT = 'predict'
@@ -24,14 +25,10 @@ def load_data(is_training):
 
 
 def get_batch_data():
-    batch_size = 8
-
-	#test_datagen = ImageDataGenerator(rescale=1./255)
-
     params = {'dim_x': 150,
           'dim_y': 150,
           'dim_z': 3,
-          'batch_size': batch_size,
+          'batch_size': BATCH,
           'shuffle': True}
 
 	#thefile = open('test.txt', 'w')
@@ -110,6 +107,8 @@ def get_batch_data():
 		each += 1
 		labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
 		each += 1
+		for i in range(8):
+			labels['data/'+TRAIN+'/npy/' + f].append(0)
 		# labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
 		# each += 1
 
@@ -126,16 +125,26 @@ def get_batch_data():
 		# labels['data/'+VALID+'/npy/' + f].append(Y_[each])
 		# each += 1
 
-    X_ = np.empty((32, 150, 150, 3))
-    Y_ = np.empty((32, 2), dtype = int)
+    X_ = np.empty((150, 150, 3))
+    Y_ = np.empty((10), dtype = int)
     x = []
     y = []
-    for i, ID in enumerate(partition['train']):
-        X_[0:32, 0:150, 0:150, 0:3] = np.load(ID)
-        X_ = np.reshape(X_, (X_.shape[0], 3, 150, 150))
+    indexes = np.arange(len(partition['train']))
+    np.random.shuffle(indexes)
+    imax = int(len(indexes)/BATCH)
+    for i in range(imax):
+        # Find list of IDs
+        list_IDs = [partition['train'][k] for k in indexes[i*BATCH:(i+1)*BATCH]]
+    print "list length : ", len(list_IDs)
+    for i, ID in enumerate(list_IDs):
+        X_[0:150, 0:150, 0:3] = np.load(ID)
+        # X_ = np.reshape(X_, (3, 150, 150))
         x.append(X_)
-        Y_[i,0:2] = labels[ID]
+        Y_[0:10] = labels[ID]
         y.append(Y_)
+    x = np.reshape(x, (BATCH, 150, 150, 3))
+    y = np.reshape(y, (BATCH, 10))
+    # print x
       #   print y[i]
     # return X_, y
 	# Generators

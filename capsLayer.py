@@ -46,20 +46,20 @@ class CapsLayer(object):
                 # input: [batch_size, 20, 20, 256]
                 assert input.get_shape() == [cfg.batch_size, 150, 150, 256]
 
-                '''
+
                 # version 1, computational expensive
-                capsules = []
-                for i in range(self.vec_len):
-                    # each capsule i: [batch_size, 6, 6, 32]
-                    with tf.variable_scope('ConvUnit_' + str(i)):
-                        caps_i = tf.contrib.layers.conv2d(input, self.num_outputs,
-                                                          self.kernel_size, self.stride,
-                                                          padding="VALID", activation_fn=None)
-                        caps_i = tf.reshape(caps_i, shape=(cfg.batch_size, -1, 1, 1))
-                        capsules.append(caps_i)
-                assert capsules[0].get_shape() == [cfg.batch_size, 1152, 1, 1]
-                capsules = tf.concat(capsules, axis=2)
-                '''
+                # capsules = []
+                # for i in range(self.vec_len):
+                #     # each capsule i: [batch_size, 6, 6, 32]
+                #     with tf.variable_scope('ConvUnit_' + str(i)):
+                #         caps_i = tf.contrib.layers.conv2d(input, self.num_outputs,
+                #                                           self.kernel_size, self.stride,
+                #                                           padding="VALID", activation_fn=None)
+                #         caps_i = tf.reshape(caps_i, shape=(cfg.batch_size, -1, 1, 1))
+                #         capsules.append(caps_i)
+                # assert capsules[0].get_shape() == [cfg.batch_size, 1152, 1, 1]
+                # capsules = tf.concat(capsules, axis=2)
+
 
                 # version 2, equivalent to version 1 but higher computational
                 # efficiency.
@@ -67,17 +67,22 @@ class CapsLayer(object):
                 # PrimaryCap convolution does a ReLU activation or not before
                 # squashing function, but experiment show that using ReLU get a
                 # higher test accuracy. So, which one to use will be your choice
+                print self.num_outputs, self.vec_len, self.kernel_size, self.stride
+
                 capsules = tf.contrib.layers.conv2d(input, self.num_outputs * self.vec_len,
-                                                    self.kernel_size, self.stride, padding="VALID",
+                                                    self.kernel_size, self.stride, padding='VALID',
                                                     activation_fn=tf.nn.relu)
                 # capsules = tf.contrib.layers.conv2d(input, self.num_outputs * self.vec_len,
                 #                                    self.kernel_size, self.stride,padding="VALID",
                 #                                    activation_fn=None)
+                print "capsule shape :", capsules.get_shape()
                 capsules = tf.reshape(capsules, (cfg.batch_size, -1, self.vec_len, 1))
 
                 # [batch_size, 1152, 8, 1]
+                print capsules.get_shape()
                 capsules = squash(capsules)
-                assert capsules.get_shape() == [cfg.batch_size, 1152, 8, 1]
+                print capsules.get_shape()
+                assert capsules.get_shape() == [cfg.batch_size, 161312, self.vec_len, 1]
                 return(capsules)
 
         if self.layer_type == 'FC':
@@ -111,7 +116,7 @@ def routing(input, b_IJ):
      '''
 
     # W: [num_caps_i, num_caps_j, len_u_i, len_v_j]
-    W = tf.get_variable('Weight', shape=(1, 1152, 10, 8, 16), dtype=tf.float32,
+    W = tf.get_variable('Weight', shape=(1, 161312, 10, 8, 16), dtype=tf.float32,
                         initializer=tf.random_normal_initializer(stddev=cfg.stddev))
 
     # Eq.2, calc u_hat
@@ -120,15 +125,15 @@ def routing(input, b_IJ):
     # W => [batch_size, 1152, 10, 8, 16]
     input = tf.tile(input, [1, 1, 10, 1, 1])
     W = tf.tile(W, [cfg.batch_size, 1, 1, 1, 1])
-    assert input.get_shape() == [cfg.batch_size, 1152, 10, 8, 1]
+    assert input.get_shape() == [cfg.batch_size, 161312, 10, 8, 1]
 
     # in last 2 dims:
     # [8, 16].T x [8, 1] => [16, 1] => [batch_size, 1152, 10, 16, 1]
     # tf.scan, 3 iter, 1080ti, 128 batch size: 10min/epoch
     # u_hat = tf.scan(lambda ac, x: tf.matmul(W, x, transpose_a=True), input, initializer=tf.zeros([1152, 10, 16, 1]))
     # tf.tile, 3 iter, 1080ti, 128 batch size: 6min/epoch
-    u_hat = tf.matmul(W, input, transpose_a=True)
-    assert u_hat.get_shape() == [cfg.batch_size, 1152, 10, 16, 1]
+    u_hat = tf.matmul(W, tf.cast(input, tf.float32), transpose_a=True)
+    assert u_hat.get_shape() == [cfg.batch_size, 161312, 10, 16, 1]
 
     # In forward, u_hat_stopped = u_hat; in backward, no gradient passed back from u_hat_stopped to u_hat
     u_hat_stopped = tf.stop_gradient(u_hat, name='stop_gradient')
@@ -163,9 +168,9 @@ def routing(input, b_IJ):
                 # reshape & tile v_j from [batch_size ,1, 10, 16, 1] to [batch_size, 10, 1152, 16, 1]
                 # then matmul in the last tow dim: [16, 1].T x [16, 1] => [1, 1], reduce mean in the
                 # batch_size dim, resulting in [1, 1152, 10, 1, 1]
-                v_J_tiled = tf.tile(v_J, [1, 1152, 1, 1, 1])
+                v_J_tiled = tf.tile(v_J, [1, 161312, 1, 1, 1])
                 u_produce_v = tf.matmul(u_hat_stopped, v_J_tiled, transpose_a=True)
-                assert u_produce_v.get_shape() == [cfg.batch_size, 1152, 10, 1, 1]
+                assert u_produce_v.get_shape() == [cfg.batch_size, 161312, 10, 1, 1]
 
                 # b_IJ += tf.reduce_sum(u_produce_v, axis=0, keep_dims=True)
                 b_IJ += u_produce_v
