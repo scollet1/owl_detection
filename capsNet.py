@@ -37,7 +37,7 @@ class CapsNet(object):
                 self.build_arch()
             else:
                 self.X = tf.placeholder(tf.float32,
-                                        shape=(cfg.batch_size, 150, 150, 1))
+                                        shape=(cfg.batch_size, 150, 150, 3))
                 self.build_arch()
 
         tf.logging.info('Seting up the main structure')
@@ -98,7 +98,7 @@ class CapsNet(object):
                 print self.caps2.get_shape()
                 print tf.squeeze(self.caps2).get_shape()
                 print self.Y.get_shape()
-                print tf.reshape(self.Y, (-1, 10, 1)).get_shape()
+                print tf.reshape(self.Y, (-1, 10, 16)).get_shape()
 
                 self.masked_v = tf.multiply(tf.squeeze(self.caps2), tf.reshape(self.Y, (-1, 10, 1)))
                 self.v_length = tf.sqrt(tf.reduce_sum(tf.square(self.caps2), axis=2, keep_dims=True) + epsilon)

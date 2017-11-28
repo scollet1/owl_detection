@@ -62,11 +62,11 @@ def get_batch_data():
 		if os.path.exists('data/'+TRAIN+'/owls/'+owls) and r < 0.50:
 			X.append('data/'+TRAIN+'/owls/'+owls)
 			Y.append(1)
-			Y.append(0)
+			# Y.append(0)
 		elif os.path.exists('data/'+TRAIN+'/not_owls/'+not_owls):
 			X.append('data/'+TRAIN+'/not_owls/'+not_owls)
 			Y.append(0)
-			Y.append(1)
+			# Y.append(1)
 
     for i in range(len(X)):
 		img = Image.open(str(X[i]))
@@ -82,11 +82,11 @@ def get_batch_data():
 		if os.path.exists('data/'+VALID+'/owls/'+owls) and r < 0.50:
 			X_.append('data/'+VALID+'/owls/'+owls)
 			Y_.append(1)
-			Y_.append(0)
+			# Y_.append(0)
 		elif os.path.exists('data/'+VALID+'/not_owls/'+not_owls):
 			X_.append('data/'+VALID+'/not_owls/'+not_owls)
 			Y_.append(0)
-			Y_.append(1)
+			# Y_.append(1)
 
     for i in range(len(X_)):
 		img = Image.open(str(X_[i]))
@@ -105,10 +105,10 @@ def get_batch_data():
 		labels['data/'+TRAIN+'/npy/' + f] = []
 		labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
 		each += 1
-		labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
-		each += 1
-		for i in range(8):
-			labels['data/'+TRAIN+'/npy/' + f].append(0)
+		# labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
+		# each += 1
+		# for i in range(8):
+			# labels['data/'+TRAIN+'/npy/' + f].append(0)
 		# labels['data/'+TRAIN+'/npy/' + f].append(Y[each])
 		# each += 1
 
@@ -120,13 +120,13 @@ def get_batch_data():
 		labels['data/'+VALID+'/npy/' + f] = []
 		labels['data/'+VALID+'/npy/' + f].append(Y_[each])
 		each += 1
-		labels['data/'+VALID+'/npy/' + f].append(Y_[each])
-		each += 1
+		# labels['data/'+VALID+'/npy/' + f].append(Y_[each])
+		# each += 1
 		# labels['data/'+VALID+'/npy/' + f].append(Y_[each])
 		# each += 1
 
     X_ = np.empty((150, 150, 3))
-    Y_ = np.empty((10), dtype = int)
+    Y_ = np.empty((1), dtype = int)
     x = []
     y = []
     indexes = np.arange(len(partition['train']))
@@ -136,14 +136,17 @@ def get_batch_data():
         # Find list of IDs
         list_IDs = [partition['train'][k] for k in indexes[i*BATCH:(i+1)*BATCH]]
     print "list length : ", len(list_IDs)
+    ex = BATCH
     for i, ID in enumerate(list_IDs):
+        if ex == 0:
+            break
         X_[0:150, 0:150, 0:3] = np.load(ID)
         # X_ = np.reshape(X_, (3, 150, 150))
         x.append(X_)
-        Y_[0:10] = labels[ID]
-        y.append(Y_)
+        y.append(labels[ID])
+        ex -= 1
     x = np.reshape(x, (BATCH, 150, 150, 3))
-    y = np.reshape(y, (BATCH, 10))
+    y = np.reshape(y, (BATCH, 1))
     # print x
       #   print y[i]
     # return X_, y
